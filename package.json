@@ -1,0 +1,37 @@
+{
+  "name": "node-version-manager",
+  "displayName": "Node Version Manager",
+  "description": "A VSCode extension to manage Node.js versions with NVM.",
+  "version": "1.0.0",
+  "publisher": "ananas-manager",
+  "engines": {
+    "vscode": "^1.70.0"
+  },
+  "activationEvents": [
+    "onCommand:extension.switchNodeVersion",
+    "onCommand:extension.listNodeVersions",
+    "onView:nodeVersionExplorer"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "extension.switchNodeVersion",
+        "title": "Switch Node Version"
+      },
+      {
+        "command": "extension.listNodeVersions",
+        "title": "List Node Versions"
+      }
+    ],
+    "views": {
+      "explorer": [
+        {
+          "id": "nodeVersionExplorer",
+          "name": "Node Versions"
+        }
+      ]
+    }
+  },
+  "dependencies": {}
+}
