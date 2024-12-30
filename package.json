@@ -2,8 +2,9 @@
   "name": "ananas-manager",
   "displayName": "ananas-manager",
   "description": "A VSCode extension to manage Node.js versions with NVM.",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "publisher": "ananas-manager",
+  "icon": "logo1.png",
   "engines": {
     "vscode": "^1.70.0"
   },
