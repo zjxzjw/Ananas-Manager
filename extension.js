@@ -1,10 +1,33 @@
 const vscode = require('vscode');
+const fs = require('fs');
+const path = require('path');
 
-// 使用 VSCode 终端 API 执行命令
-function executeCommandInTerminal(command) {
-    const terminal = vscode.window.createTerminal('NVM Terminal');
-    terminal.show();  // 显示终端
-    terminal.sendText(command);  // 发送命令到终端
+// 获取 NVM 配置的路径
+function getNvmPath() {
+    const config = vscode.workspace.getConfiguration('nodeVersionManager');
+    const nvmPath = config.get('nvmPath') || '';  // 获取配置中的 nvmPath
+    return nvmPath;
+}
+
+// 解析 NVM 路径中的 Node 版本
+function getNodeVersionsFromNvm(nvmPath) {
+    const nodeVersions = [];
+    const versionsDir = nvmPath;  // NVM 目录本身，版本文件夹直接在这个目录下
+    
+    if (fs.existsSync(versionsDir)) {
+        const versions = fs.readdirSync(versionsDir);
+
+        // 只取文件夹中以 "v" 开头的版本
+        versions.forEach((version) => {
+            const versionDir = path.join(versionsDir, version);
+            // 检查文件夹是否以 "v" 开头
+            if (fs.statSync(versionDir).isDirectory() && version.startsWith('v')) {
+                nodeVersions.push(version);  // 保留 'v' 前缀，直接添加到版本列表
+            }
+        });
+    }
+
+    return nodeVersions;
 }
 
 // Node 版本树节点类
@@ -18,8 +41,8 @@ class NodeVersionTreeItem extends vscode.TreeItem {
         if (command) {
             this.command = {
                 command: command,
-                title: "Show Node Versions",
-                arguments: []
+                title: "Switch Node Version",
+                arguments: [version]  // 把版本作为参数传递给命令
             };
         }
     }
@@ -45,34 +68,44 @@ class NodeVersionProvider {
         return [];
     }
 
-    // 获取 Node.js 版本列表，并添加一个按钮来查看已安装的版本
+    // 获取 Node.js 版本列表，并显示到视图
     async getNodeVersions() {
-        const versions = [];
+        const nodeVersions = [];
+        const nvmPath = getNvmPath();
 
-        // 创建一个按钮节点，点击按钮时会显示 Node.js 版本列表
-        const showButtonNode = new NodeVersionTreeItem(
-            "Show Installed Node Versions",
-            null,
-            vscode.TreeItemCollapsibleState.None,
-            'extension.showNodeVersionsInTerminal'
-        );
+        if (!nvmPath) {
+            vscode.window.showErrorMessage('NVM path not configured.');
+            return [];
+        }
+
+        const versions = getNodeVersionsFromNvm(nvmPath);
         
-        versions.push(showButtonNode);
+        if (versions.length === 0) {
+            vscode.window.showInformationMessage('No Node.js versions found.');
+            return [];
+        }
 
-        return versions;
+        // 创建每个版本的树节点
+        versions.forEach(version => {
+            const versionNode = new NodeVersionTreeItem(
+                version,  // 保留 'v' 前缀直接作为标签
+                version,
+                vscode.TreeItemCollapsibleState.None,
+                'extension.switchNodeVersion'  // 设置点击版本时的命令
+            );
+            nodeVersions.push(versionNode);
+        });
+
+        return nodeVersions;
     }
 
-    // 执行命令并打开终端
+    // 切换 Node 版本
     executeCommandInTerminal(command) {
         return new Promise((resolve, reject) => {
             const terminal = vscode.window.createTerminal('NVM Terminal');
-            terminal.show();  // 显示终端
-            terminal.sendText(command);  // 发送命令到终端
-
-            // 给命令执行一些时间
-            setTimeout(() => {
-                resolve();
-            }, 2000);  // 假设两秒钟足够执行命令，您可以根据需要调整这个延迟
+            terminal.show();
+            terminal.sendText(command);
+            resolve();
         });
     }
 
@@ -91,21 +124,25 @@ function activate(context) {
         treeDataProvider: nodeVersionProvider
     });
 
-    // 注册查看已安装的 Node 版本的命令：点击按钮触发
-    let disposable = vscode.commands.registerCommand('extension.showNodeVersionsInTerminal', async () => {
+    // 注册切换 Node 版本的命令
+    let disposable = vscode.commands.registerCommand('extension.switchNodeVersion', async (version) => {
         try {
-            // 执行 `nvm ls` 命令来显示已安装的 Node.js 版本
-            await nodeVersionProvider.executeCommandInTerminal('nvm ls');
-            vscode.window.showInformationMessage('Node.js versions displayed in terminal.');
+            const nvmPath = getNvmPath();
+            if (!nvmPath) {
+                vscode.window.showErrorMessage('NVM path is not configured.');
+                return;
+            }
+            await nodeVersionProvider.executeCommandInTerminal(`nvm use ${version}`);
+            vscode.window.showInformationMessage(`Switched to Node.js version ${version}`);
         } catch (err) {
-            vscode.window.showErrorMessage(`Failed to list Node.js versions: ${err.message}`);
+            vscode.window.showErrorMessage(`Failed to switch Node.js version: ${err.message}`);
         }
     });
 
     context.subscriptions.push(disposable);
 }
 
-// 插件停用时的清理工作
+// 停用插件
 function deactivate() {}
 
 module.exports = {
