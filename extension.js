@@ -101,7 +101,7 @@ class NodeVersionProvider {
 
     // 切换 Node 版本
     executeCommandInTerminal(command) {
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => {
             const terminal = vscode.window.createTerminal('NVM Terminal');
             terminal.show();
             terminal.sendText(command);
