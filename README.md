@@ -1,7 +1,3 @@
-<p align="center">
-   <img src="logo1.png" width="100" />
-</p>
-
 # 🍍 Ananas Manager: Node 版本管理工具
 
 Ananas Manager 是一个基于 NVM（Node Version Manager）和 VS Code 插件的可视化工具，用于管理 Node.js 的不同版本。它为开发者提供了一个直观、便捷的方式来切换和管理 Node 版本，提升开发效率。
